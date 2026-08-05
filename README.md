@@ -67,20 +67,24 @@ Then open the project in Cursor and tell the agent:
 > Initialise the memory bank from `memory-bank/_templates/`.
 
 It will fill the spine from the repo and from your answers. It will not invent project facts.
+`AGENTS.md` identifies the project as using XAC so agents know the system they are in.
 
-**Already have a memory bank?** Say this instead:
+**Already have project memory (XAC-shaped or not), or see `*.new` beside rules/skills?**
+Say this instead:
 
 > Run the `memory-migrate` skill.
 
-Nothing existing is deleted, rewritten, or moved without your approval. Migration adds
-frontmatter in place, builds an index from what is already there, and *proposes* moves for you
-to accept or decline.
+The agent will ask where that memory lives — `memory-bank/` (or the Cursor variants), or a
+path you point it at — then map tickets, decisions, notes, and the rest into XAC. Nothing
+existing is deleted, rewritten, or moved without your approval. Migration also walks parked
+XAC conflicts under `.cursor/rules/` and `.cursor/skills/` so you can reconcile them.
 
 ### Nothing gets overwritten
 
 The installer only creates what is missing. If a file already exists with different content,
-the new version lands beside it as `<name>.new` and the original is left alone. Reconciling the
-two is a conversation between you and the agent, not a guess made by a script.
+the incoming XAC version lands beside it as `<name>.new` and the original is left alone.
+That includes rules and skills, not only memory bank files. Reconciling the two is a
+conversation between you and the agent via `memory-migrate`, not a guess made by a script.
 
 Re-running is safe and idempotent.
 
@@ -273,7 +277,7 @@ evidence:
 | `memory-write` | automatically | Writes a page with the right family, frontmatter, links, and index entry |
 | `memory-maintain` | automatically | Promotes candidates behind the gate; audits for contradictions, stale pages, duplicates |
 | `plan-spec` | automatically | Turns a request into a specified, verifiable task and gates it before execution |
-| `memory-migrate` | on request | Adopts an existing memory bank without losing anything |
+| `memory-migrate` | on request | Maps any existing project memory into XAC; reconciles parked `*.new` files |
 | `design-discovery` | on request | Interviews you, researches references, drafts interactive HTML mocks, records the approved direction |
 | `idea-capture` | on request | Parks an idea in the backlog in seconds; refines it toward ready when asked |
 | `cycle-close` | on request | Compresses a finished cycle into one archive page, deletions gated on your approval |
@@ -353,8 +357,12 @@ the design:
 ## Updating an existing install
 
 Re-run the installer. Files that already match are skipped, new files are added, and anything you
-have customised is left alone with the new version parked as `<name>.new` beside it. Ask the agent
-to reconcile them with you.
+have customised is left alone with the new XAC version parked as `<name>.new` beside it
+(rules and skills included). Then ask the agent:
+
+> Run the `memory-migrate` skill.
+
+It will ask where existing memory lives (XAC paths or elsewhere) and walk parked conflicts.
 
 ## Forking
 

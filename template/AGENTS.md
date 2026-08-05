@@ -1,7 +1,8 @@
-# Agent instructions
+# Agent instructions — XAC
 
-This repo keeps shared, versioned memory for agents in `memory-bank/`. Read it before acting
-and write to it at work milestones. It is the only continuity across sessions.
+This project uses **XAC** (eXtreme Agentic Coding): shared memory and engineering discipline
+for coding agents. Continuity lives in `memory-bank/`. Read it before acting and write to it
+at work milestones.
 
 ## Before starting work
 

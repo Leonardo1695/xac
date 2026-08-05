@@ -39,7 +39,8 @@ milestones land, trim what ships.
 3. **Dogfood the loop in a scratch project** (not in this repo): capture an idea, pull it
    into a cycle, run `design-discovery`, implement, close the cycle. Adjust rules based on
    what the triggers actually do.
-4. **Dry-run `memory-migrate`** against a copy of a project with a legacy memory bank.
+4. **Dry-run `memory-migrate`** against a copy of a project with a legacy or foreign
+   memory layout (not only an XAC-shaped `memory-bank/`).
 
 ## Deferred, deliberately
 

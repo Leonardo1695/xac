@@ -154,8 +154,25 @@ function findMisplacedBanks() {
   return ALTERNATE_BANK_PATHS.filter((candidate) => existsSync(join(targetRoot, candidate)));
 }
 
+function printNextSteps(needsReconcile) {
+  if (needsReconcile) {
+    console.log("\nNext: XAC parked *.new files need a reconcile (rules and skills too).");
+    console.log("Ask your agent, for example:\n");
+    console.log("  Run the memory-migrate skill.\n");
+    return;
+  }
+
+  console.log("\nNext:");
+  console.log("  New XAC project — ask your agent:");
+  console.log("    Initialise the memory bank from memory-bank/_templates/.");
+  console.log("");
+  console.log("  Existing project memory (any layout), or *.new beside rules/skills — ask instead:");
+  console.log("    Run the memory-migrate skill.\n");
+}
+
 function report(created, conflicts, alreadyParked, identical, misplacedBanks) {
   const prefix = isDryRun ? "would " : "";
+  const needsReconcile = conflicts.length > 0 || alreadyParked.length > 0 || misplacedBanks.length > 0;
 
   if (created.length > 0) {
     console.log(`\n${prefix}created ${created.length} file(s):`);
@@ -165,12 +182,12 @@ function report(created, conflicts, alreadyParked, identical, misplacedBanks) {
   }
 
   if (conflicts.length > 0) {
-    console.log(`\n${prefix}parked ${conflicts.length} conflict(s) alongside the existing file:`);
+    console.log(`\n${prefix}parked ${conflicts.length} XAC conflict(s) as *.new (original left alone):`);
     for (const path of conflicts) {
       console.log(`  ${path}.new`);
     }
-    console.log("\nThese targets already exist with different content. Nothing was overwritten.");
-    console.log("Ask the agent to run the memory-migrate skill to reconcile them with you.");
+    console.log("\nThe *.new file is the incoming XAC version. The existing file is yours.");
+    console.log("This includes .cursor/rules/ and .cursor/skills/, not only memory-bank/.");
   }
 
   if (alreadyParked.length > 0) {
@@ -191,14 +208,16 @@ function report(created, conflicts, alreadyParked, identical, misplacedBanks) {
       console.log(`  ${path}`);
     }
     console.log("The canonical location is memory-bank/ at the project root.");
-    console.log("Nothing was moved. The memory-migrate skill will propose consolidating it.");
+    console.log("Nothing was moved. memory-migrate will propose consolidating it.");
   }
 
-  console.log("\nNext: open the project in Cursor and ask the agent to initialise the memory");
-  console.log("bank from memory-bank/_templates/, or to migrate an existing one.\n");
+  printNextSteps(needsReconcile);
+  console.log(isDryRun ? "XAC dry-run complete.\n" : "XAC install complete.\n");
 }
 
 async function main() {
+  console.log(isDryRun ? "\nXAC — dry-run (no files written)" : "\nXAC — installing agent memory, rules, and skills");
+
   const personalPaths = await resolvePersonalPaths();
   const buckets = { create: [], conflict: [], parked: [], identical: [] };
 
