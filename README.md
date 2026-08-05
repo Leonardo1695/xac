@@ -86,7 +86,8 @@ XAC install complete.
 Use the first prompt on a greenfield project. Use the second if you already have memory
 somewhere (XAC-shaped or not) or if the install parked `*.new` files.
 
-`AGENTS.md` identifies the project as using XAC. Init fills the spine from the repo and
+`AGENTS.md` identifies the project as using XAC and links to
+https://github.com/Leonardo1695/xac. Init fills the spine from the repo and
 your answers — it will not invent project facts. Migrate asks where source memory lives
 (`memory-bank/`, `.cursor/memory-bank/`, `.cursor/rules/memory-bank/`, or a path you
 point it at), maps into XAC, and walks parked rule/skill conflicts.
@@ -285,7 +286,7 @@ Numbers below are measured on the shipped files, estimated at ~4 characters per 
 |---|---|---|
 | The four rules files | 17.4 kB | 4,500 |
 | Skill catalog — 12 one-line descriptions; a skill's body loads only when it runs | 4 kB | 1,000 |
-| `AGENTS.md` router — names XAC; written for non-Cursor harnesses; some load it alongside the rules | 2.2 kB | 550 |
+| `AGENTS.md` router — names XAC + repo link; for non-Cursor harnesses; some load it alongside the rules | 2.3 kB | 575 |
 | `caveman.mdc`, only if opted in (prompt or `--personal`) | 3.4 kB | 900 |
 
 On top of that fixed cost, a session open reads the hot set — `index.md`,

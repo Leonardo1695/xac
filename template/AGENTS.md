@@ -4,6 +4,8 @@ This project uses **XAC** (eXtreme Agentic Coding): shared memory and engineerin
 for coding agents. Continuity lives in `memory-bank/`. Read it before acting and write to it
 at work milestones.
 
+Installed by [XAC](https://github.com/Leonardo1695/xac).
+
 ## Before starting work
 
 1. `memory-bank/index.md` — what exists
