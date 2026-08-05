@@ -56,7 +56,8 @@ docs/                  factory documentation — never ships
 
 `files` in `package.json` is just `bin` plus `template`, so nothing repo-specific can reach
 the tarball by construction. `isShippable` in `bin/cli.mjs` guards the two remaining
-invariants at install time: personal style modules are opt-in, and `memory-bank/` may only
+invariants at install time: personal style modules are opt-in (TTY prompt, or `--personal` /
+`--no-personal` for non-interactive runs), and `memory-bank/` may only
 carry the scaffold. The CLI refuses to install into the package root itself. See
 [ADR 7](decisions/0007-template-directory-separates-product-from-factory.md).
 

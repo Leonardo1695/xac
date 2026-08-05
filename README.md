@@ -53,9 +53,13 @@ can open, read, grep, and diff.
 npx github:Leonardo1695/xac
 ```
 
+On an interactive terminal the installer asks about optional personal modules (caveman chat
+style defaults to no). Flags skip the prompts for scripts and CI:
+
 ```bash
-npx github:Leonardo1695/xac --dry-run    # show what would happen, change nothing
-npx github:Leonardo1695/xac --personal   # also install optional personal style rules
+npx github:Leonardo1695/xac --dry-run       # show what would happen, change nothing
+npx github:Leonardo1695/xac --personal      # include personal modules, no prompt
+npx github:Leonardo1695/xac --no-personal   # skip personal modules, no prompt
 ```
 
 Then open the project in Cursor and tell the agent:
@@ -179,7 +183,7 @@ Numbers below are measured on the shipped files, estimated at ~4 characters per 
 | The four rules files | 17.4 kB | 4,500 |
 | Skill catalog — 12 one-line descriptions; a skill's body loads only when it runs | 4 kB | 1,000 |
 | `AGENTS.md` router — written for non-Cursor harnesses; some load it alongside the rules | 2.1 kB | 550 |
-| `caveman.mdc`, only if installed with `--personal` | 3.4 kB | 900 |
+| `caveman.mdc`, only if opted in (prompt or `--personal`) | 3.4 kB | 900 |
 
 On top of that fixed cost, a session open reads the hot set — `index.md`,
 `activeContext.md`, `handoff.md` — which is budget-capped around 5k tokens and usually far

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
+import { stdin as input, stdout as output } from "node:process";
+import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -9,7 +11,8 @@ const templateRoot = join(packageRoot, "template");
 const targetRoot = process.cwd();
 
 const isDryRun = process.argv.includes("--dry-run");
-const includePersonal = process.argv.includes("--personal");
+const flagPersonal = process.argv.includes("--personal");
+const flagNoPersonal = process.argv.includes("--no-personal");
 
 // Lowercased because Windows reports the same directory with either drive-letter case.
 if (targetRoot.toLowerCase() === packageRoot.toLowerCase()) {
@@ -18,9 +21,21 @@ if (targetRoot.toLowerCase() === packageRoot.toLowerCase()) {
   process.exit(1);
 }
 
+if (flagPersonal && flagNoPersonal) {
+  console.error("Use only one of --personal or --no-personal.");
+  process.exit(1);
+}
+
 const PAYLOAD_ROOTS = [".cursor/rules", ".cursor/skills", "memory-bank"];
 const PAYLOAD_FILES = ["AGENTS.md"];
-const PERSONAL_RULES = [".cursor/rules/caveman.mdc"];
+// Opt-in modules: asked on a TTY, or forced by --personal / skipped by --no-personal.
+const PERSONAL_MODULES = [
+  {
+    paths: [".cursor/rules/caveman.mdc"],
+    prompt: "Install caveman chat style (terse agent prose)? [y/N] ",
+  },
+];
+const PERSONAL_RULES = PERSONAL_MODULES.flatMap((module) => module.paths);
 const ALTERNATE_BANK_PATHS = [".cursor/memory-bank", ".cursor/rules/memory-bank"];
 
 function toPosix(pathValue) {
@@ -40,10 +55,46 @@ function listFilesRecursively(absoluteDir) {
   return found;
 }
 
+async function askYesNo(question, defaultYes = false) {
+  const rl = createInterface({ input, output });
+  try {
+    const answer = (await rl.question(question)).trim().toLowerCase();
+    if (answer === "") {
+      return defaultYes;
+    }
+    return answer === "y" || answer === "yes";
+  } finally {
+    rl.close();
+  }
+}
+
+// Flags win. TTY asks per module (default no). Non-TTY / CI defaults to off.
+async function resolvePersonalPaths() {
+  if (flagPersonal) {
+    return new Set(PERSONAL_RULES);
+  }
+  if (flagNoPersonal) {
+    return new Set();
+  }
+  if (!input.isTTY || !output.isTTY) {
+    return new Set();
+  }
+
+  const selected = new Set();
+  for (const module of PERSONAL_MODULES) {
+    if (await askYesNo(module.prompt, false)) {
+      for (const path of module.paths) {
+        selected.add(path);
+      }
+    }
+  }
+  return selected;
+}
+
 // Everything under template/ ships, with two guards: personal style modules are opt-in, and
 // memory-bank/ may only ever carry the scaffold — templates and directory markers.
-function isShippable(posixPath) {
-  if (!includePersonal && PERSONAL_RULES.includes(posixPath)) {
+function isShippable(posixPath, personalPaths) {
+  if (PERSONAL_RULES.includes(posixPath) && !personalPaths.has(posixPath)) {
     return false;
   }
   if (posixPath.startsWith("memory-bank/")) {
@@ -52,7 +103,7 @@ function isShippable(posixPath) {
   return true;
 }
 
-function collectPayload() {
+function collectPayload(personalPaths) {
   const payload = [];
   for (const root of PAYLOAD_ROOTS) {
     const absoluteRoot = join(templateRoot, root);
@@ -68,7 +119,7 @@ function collectPayload() {
       payload.push(file);
     }
   }
-  return payload.filter(isShippable).sort();
+  return payload.filter((posixPath) => isShippable(posixPath, personalPaths)).sort();
 }
 
 function classify(posixPath) {
@@ -147,10 +198,11 @@ function report(created, conflicts, alreadyParked, identical, misplacedBanks) {
   console.log("bank from memory-bank/_templates/, or to migrate an existing one.\n");
 }
 
-function main() {
+async function main() {
+  const personalPaths = await resolvePersonalPaths();
   const buckets = { create: [], conflict: [], parked: [], identical: [] };
 
-  for (const posixPath of collectPayload()) {
+  for (const posixPath of collectPayload(personalPaths)) {
     const action = classify(posixPath);
     buckets[action].push(posixPath);
     if (action === "create" || action === "conflict") {

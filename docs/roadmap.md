@@ -21,7 +21,7 @@ milestones land, trim what ships.
   `pr-description`, `design-discovery`, `cycle-close`, `idea-capture`.
 - Installer verified by hand on Windows: clean install, identical skip, conflict parked as
   `.new`, already-parked recognised, misplaced bank detected without being moved, idempotent
-  re-runs.
+  re-runs. Personal modules are opt-in via TTY prompt or `--personal` / `--no-personal`.
 - Public README, MIT LICENSE, package metadata.
 - Context growth audit: session pages now expire (~3 months), `_lint/` joined the
   never-loaded tier with reports pruned to the last three, and the README documents the

@@ -17,7 +17,8 @@ holds the factory: `docs/`, `bin/`, factory-only `.cursor/rules/`, and `test-ins
   dependencies. Adding one would mean a lockfile, an audit surface, and an install step for a
   tool whose whole claim is that it has no runtime.
 - Distribution via `npx github:Leonardo1695/xac`. No publish step, no build step. The repo is
-  the package.
+  the package. Interactive installs ask about personal modules; `--personal` /
+  `--no-personal` skip the prompts for scripts and CI.
 - Windows and PowerShell are the primary development environment: no `&&` chaining, no
   bash-only utilities.
 
@@ -43,7 +44,8 @@ once nearly shipped this repo's own working pages inside the tarball: the entry 
 **The payload boundary is the directory.** `files` is `bin` plus `template`, and repo-only
 files live outside `template/`, so they cannot leak by construction — there are no exclusion
 lists to keep in sync anymore. `isShippable` in `bin/cli.mjs` still guards two invariants at
-install time: personal modules ship only behind `--personal`, and `template/memory-bank/`
+install time: personal modules are opt-in (prompt or `--personal`), and `template/memory-bank/`
 may only carry `_templates/` and `.gitkeep` markers.
 
-**`caveman.mdc` is a personal style module** and ships only behind `--personal`.
+**`caveman.mdc` is a personal style module.** On a TTY the installer asks; `--personal`
+includes it, `--no-personal` and non-TTY installs skip it (default off).
