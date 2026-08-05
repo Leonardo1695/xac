@@ -1,0 +1,81 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# Engineering rules
+
+Code here is read and edited by agents as much as by people. An agent navigates by grep and
+reads in chunks, so structure that helps it is a working constraint, not a style preference.
+None of this happens by default — an unprompted model writes long files, wide names, and no
+tests.
+
+## Shape
+
+- Functions 4–20 lines. Split anything longer.
+- Files under 500 lines, target 200–300. One unit of meaning should fit a single read.
+- One responsibility per module. Three focused files beat one file doing three things.
+- Names must be searchable. If grepping a name returns mostly irrelevant hits, the name is
+  wrong. Never `data`, `handler`, `process`, `Manager`, `Service`.
+- Explicit types everywhere. No `any`, no untyped public functions.
+- Early returns and guard clauses. Two levels of indentation, not four.
+- Exception messages carry the offending value and the expected shape.
+- Inject dependencies. Do not construct or import them inside the unit under test.
+- Follow the framework's directory convention so paths are predictable without searching.
+- Formatting is the formatter's job. Do not discuss it.
+- Do not create an abstraction before it is needed.
+
+## Comments
+
+- Write why, never what. No captions on obvious operations.
+- Record provenance where it cannot be inferred: the bug this guards against, the upstream
+  issue, the business rule forcing this order, the incident that made this necessary.
+- Do not strip existing provenance comments during a refactor. They are context the next
+  reader needs and cannot recover from the code alone.
+- Do not narrate the change being made. That belongs in the commit message.
+
+## UI work
+
+- A ticket with a `design:` link has its spec: match the mock's layout, states, and
+  interactions exactly. Do not invent visual decisions the mock already made.
+- Reimplement in the project's stack and existing components. Tokens and interaction
+  semantics transfer; mock markup does not.
+- Where the mock is silent, ask. Do not improvise.
+- No linked design: follow `memory-bank/designSystem.md`. If direction is genuinely missing,
+  offer `design-discovery`. Never block UI work on the absence of a design.
+
+## Verification
+
+- Every change ships with its test, in the same increment. Feature gets a test, bug fix gets
+  a regression test.
+- The suite runs headless from one documented command in `memory-bank/techContext.md`. No
+  manual seeding, no interactive prompts, no real credentials.
+- Mock external I/O with named fakes, not inline stubs.
+- Run the verification commands before reporting anything as done.
+
+## Increments
+
+- One coherent change per commit. Never sweep unrelated work together.
+- Every commit on the main branch passes verification. No "the next commit fixes it".
+- Keep the verification loop fast enough that running it every time is painless.
+
+## Refactor cadence
+
+An agent adds code; it does not prune unless asked. So prune on schedule, not on feeling.
+
+- Starting a feature: state the standards up front.
+- After a large change, or a few hours of work: remove dead code, collapse duplication, add
+  missing tests, replace magic values, split anything too large. Never change behaviour
+  without tests covering it first.
+- Before a release: audit for leaked secrets, dangerous permissions, destructive commands,
+  path traversal, missing validation, unhandled failure paths.
+
+Skills: `refactor-pass`, `test-pass`, `security-audit`.
+
+## Throwing work away
+
+- Prototype in `experiments/` before committing to a library, framework, or approach. Write
+  the finding to a `decisions/` page, then delete the experiment. The document is the point,
+  not the code.
+- Research before implementing. Ten minutes of searching can remove days of hand-rolling.
+- Getting roughly working is cheap. The last stretch is not. Say so before promising it.

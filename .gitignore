@@ -1,0 +1,11 @@
+node_modules/
+*.log
+*.tgz
+.DS_Store
+Thumbs.db
+
+# Local install playground. Run the installer here, never at the repo root.
+/test-install/
+
+# Personal style module — its shippable copy lives in template/.cursor/rules/.
+/.cursor/rules/caveman.mdc
