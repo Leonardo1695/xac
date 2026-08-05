@@ -49,35 +49,56 @@ can open, read, grep, and diff.
 
 ## Quick start
 
+From the target project (not the XAC source repo):
+
 ```bash
 npx github:Leonardo1695/xac
 ```
 
-On an interactive terminal the installer asks about optional personal modules (caveman chat
-style defaults to no). Flags skip the prompts for scripts and CI:
+The installer prints `XAC — installing agent memory, rules, and skills`, then on an
+interactive terminal asks:
 
-```bash
-npx github:Leonardo1695/xac --dry-run       # show what would happen, change nothing
-npx github:Leonardo1695/xac --personal      # include personal modules, no prompt
-npx github:Leonardo1695/xac --no-personal   # skip personal modules, no prompt
+```text
+Install caveman chat style (terse agent prose)? [y/N]
 ```
 
-Then open the project in Cursor and tell the agent:
+Default is no. Flags skip the question (useful for scripts and CI):
 
-> Initialise the memory bank from `memory-bank/_templates/`.
+```bash
+npx github:Leonardo1695/xac --dry-run       # preview only — XAC dry-run complete
+npx github:Leonardo1695/xac --personal      # include caveman, no prompt
+npx github:Leonardo1695/xac --no-personal   # skip caveman, no prompt
+```
 
-It will fill the spine from the repo and from your answers. It will not invent project facts.
-`AGENTS.md` identifies the project as using XAC so agents know the system they are in.
+When it finishes without conflicts, it tells you what to ask the agent next:
 
-**Already have project memory (XAC-shaped or not), or see `*.new` beside rules/skills?**
-Say this instead:
+```text
+Next:
+  New XAC project — ask your agent:
+    Initialise the memory bank from memory-bank/_templates/.
 
-> Run the `memory-migrate` skill.
+  Existing project memory (any layout), or *.new beside rules/skills — ask instead:
+    Run the memory-migrate skill.
 
-The agent will ask where that memory lives — `memory-bank/` (or the Cursor variants), or a
-path you point it at — then map tickets, decisions, notes, and the rest into XAC. Nothing
-existing is deleted, rewritten, or moved without your approval. Migration also walks parked
-XAC conflicts under `.cursor/rules/` and `.cursor/skills/` so you can reconcile them.
+XAC install complete.
+```
+
+Use the first prompt on a greenfield project. Use the second if you already have memory
+somewhere (XAC-shaped or not) or if the install parked `*.new` files.
+
+`AGENTS.md` identifies the project as using XAC. Init fills the spine from the repo and
+your answers — it will not invent project facts. Migrate asks where source memory lives
+(`memory-bank/`, `.cursor/memory-bank/`, `.cursor/rules/memory-bank/`, or a path you
+point it at), maps into XAC, and walks parked rule/skill conflicts.
+
+If the installer parks conflicts, the next-steps block is migrate-only:
+
+```text
+Next: XAC parked *.new files need a reconcile (rules and skills too).
+Ask your agent, for example:
+
+  Run the memory-migrate skill.
+```
 
 ### Nothing gets overwritten
 
@@ -87,6 +108,84 @@ That includes rules and skills, not only memory bank files. Reconciling the two 
 conversation between you and the agent via `memory-migrate`, not a guess made by a script.
 
 Re-running is safe and idempotent.
+
+## Flow
+
+How the pieces connect from install through a normal work cycle.
+
+### Install and first session
+
+```mermaid
+flowchart TD
+  A[npx github:Leonardo1695/xac] --> B{Interactive TTY?}
+  B -->|yes| C[Ask: install caveman?]
+  B -->|no / flags| D[--personal or --no-personal]
+  C --> E[Copy rules, skills, memory-bank scaffold]
+  D --> E
+  E --> F{Prior project memory or *.new conflicts?}
+  F -->|no| G[Ask agent: Initialise the memory bank…]
+  F -->|yes| H[Ask agent: Run memory-migrate]
+  H --> I{Where is source memory?}
+  I -->|memory-bank/ or Cursor variants| J[Near-XAC: annotate and map]
+  I -->|elsewhere — you point the path| K[Foreign: map into XAC memory-bank/]
+  J --> L[Reconcile parked *.new rules/skills]
+  K --> L
+  G --> M[Spine filled from repo + your answers]
+  L --> M
+  M --> N[Ready to work]
+```
+
+### A work session
+
+```mermaid
+flowchart TD
+  S[Session open] --> R[Rules always loaded]
+  S --> H[Read hot memory: index, handoff, activeContext]
+  H --> P[plan-spec: what / how / not-wanted / verify]
+  P --> W[Implement one increment]
+  W --> V[Run verification from techContext]
+  V --> M{Milestone?}
+  M -->|yes| MW[memory-write / maintain]
+  M -->|no| W
+  MW --> A{Announce or stage?}
+  A -->|announce| B[Write and report]
+  A -->|stage| C[_pending/ — wait for your yes]
+  B --> D{More work?}
+  C --> D
+  D -->|yes| P
+  D -->|pause / done| MS[memory-session: handoff + session page]
+```
+
+### Skills — when they load
+
+```mermaid
+flowchart LR
+  subgraph ambient ["Ambient — agent reaches when relevant"]
+    MS[memory-session]
+    MW[memory-write]
+    MM[memory-maintain]
+    PS[plan-spec]
+  end
+
+  subgraph named ["Named — you ask for them"]
+    MIG[memory-migrate]
+    ID[idea-capture]
+    DD[design-discovery]
+    CC[cycle-close]
+    RF[refactor-pass]
+    TP[test-pass]
+    SA[security-audit]
+    PR[pr-description]
+  end
+
+  Work[Everyday work] --> ambient
+  Work --> named
+```
+
+Tickets move `backlog → active → archive` (`idea-capture` parks, cycle work lives in
+`active/`, `cycle-close` compresses). Design, when you want it, runs through
+`design-discovery` before implementation. Engineering passes (`refactor-pass`, `test-pass`,
+`security-audit`) and `pr-description` are deliberate, on request.
 
 ## How it works
 
@@ -186,7 +285,7 @@ Numbers below are measured on the shipped files, estimated at ~4 characters per 
 |---|---|---|
 | The four rules files | 17.4 kB | 4,500 |
 | Skill catalog — 12 one-line descriptions; a skill's body loads only when it runs | 4 kB | 1,000 |
-| `AGENTS.md` router — written for non-Cursor harnesses; some load it alongside the rules | 2.1 kB | 550 |
+| `AGENTS.md` router — names XAC; written for non-Cursor harnesses; some load it alongside the rules | 2.2 kB | 550 |
 | `caveman.mdc`, only if opted in (prompt or `--personal`) | 3.4 kB | 900 |
 
 On top of that fixed cost, a session open reads the hot set — `index.md`,
@@ -270,6 +369,9 @@ evidence:
 ```
 
 ## Skills
+
+Ambient skills load when relevant; named skills load when you ask. See [Flow](#flow) for
+how they sit in the work loop.
 
 | Skill | Loads | Does |
 |---|---|---|
