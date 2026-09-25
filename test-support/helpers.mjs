@@ -10,8 +10,8 @@ import { fileURLToPath } from "node:url";
 export const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const templateRoot = join(packageRoot, "template");
 
-// The opt-in modules, restated so a test can assert they stay opt-in.
-const PERSONAL_PATHS = [".cursor/rules/caveman.mdc"];
+// The one directory the installer may write, restated rather than imported (see below).
+export const XAC_ROOT = "memory-bank/_xac";
 
 // A throwaway copy of bin/ + template/, so a test can put a file in the payload without
 // touching the real product tree and racing every other test that installs from it.
@@ -34,8 +34,7 @@ export function removeProject(projectRoot) {
   rmSync(projectRoot, { recursive: true, force: true });
 }
 
-// Installs run non-interactively: stdin is a pipe, so the CLI never reaches its TTY prompt.
-export function runInstaller(projectRoot, args = ["--no-personal"], fromPackageRoot = packageRoot) {
+export function runInstaller(projectRoot, args = [], fromPackageRoot = packageRoot) {
   const cliPath = join(fromPackageRoot, "bin", "cli.mjs");
   return spawnSync(process.execPath, [cliPath, ...args], {
     cwd: projectRoot,
@@ -69,16 +68,8 @@ export function installedPaths(projectRoot) {
 
 // Restated rather than imported from bin/cli.mjs on purpose. A test that reuses the
 // implementation's own filter only proves the implementation agrees with itself.
-export function shippablePaths({ personal = false } = {}) {
+export function shippablePaths() {
   return templatePaths()
-    .filter((posixPath) => {
-      if (PERSONAL_PATHS.includes(posixPath)) {
-        return personal;
-      }
-      if (posixPath.startsWith("memory-bank/")) {
-        return posixPath.startsWith("memory-bank/_templates/") || posixPath.endsWith("/.gitkeep");
-      }
-      return true;
-    })
+    .filter((posixPath) => posixPath.startsWith(`${XAC_ROOT}/`))
     .sort();
 }

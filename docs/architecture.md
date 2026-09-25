@@ -9,8 +9,8 @@ Separated by guarantee, not by topic:
 
 | Layer | Path | Guarantee | Cost |
 |---|---|---|---|
-| Rules | `.cursor/rules/*.mdc` | Loaded every turn | Permanent token cost per turn |
-| Skills | `.cursor/skills/*/SKILL.md` | Loaded when relevant or named | Paid only when used |
+| Rules | the XAC section of `AGENTS.md` | Loaded by the harness every session | Permanent token cost, capped at ~15 kB by a test |
+| Skills | `memory-bank/_xac/skills/*/SKILL.md` | Read when the catalog says so, or when named | Paid only when used |
 | Memory | `memory-bank/` | Read at session start, written at milestones | Paid on read |
 
 The rules hold triggers and non-negotiables. The skills hold procedure. The memory bank holds
@@ -19,22 +19,27 @@ is either never read or always paid for.
 
 ## Enforcement tiers
 
-Skills are not lifecycle-bound. A skill with `disable-model-invocation: true` loads only when
-named; without it, the agent decides from the description. Neither is a guarantee. So anything
-that must always happen lives in an always-applied rule, and skills carry only the how.
+Skills are not lifecycle-bound, and no harness loads them for XAC: the agent opens a skill
+because a catalog row in `AGENTS.md` says to. That is not a guarantee. So anything that must
+always happen lives in the `AGENTS.md` section itself, and skills carry only the how.
 
 | Need | Where it lives |
 |---|---|
-| Must always be in context | always-applied rule |
-| Agent should reach for it when relevant | ambient skill, no `disable-model-invocation` |
-| Deliberate, user-driven pass | named skill, `disable-model-invocation: true` |
+| Must always be in context | the XAC section of `AGENTS.md` |
+| Agent should reach for it when relevant | ambient skill, a catalog row saying when |
+| Deliberate, user-driven pass | named skill, marked *Named* in the catalog |
+
+A pointer from `AGENTS.md` to another file is followed mechanically only by Claude Code, through
+`@path` imports. Everywhere else it depends on the agent choosing to open the file, which is why
+the rules are inline rather than behind a pointer ([ADR 12](decisions/0012-agents-md-is-the-entry-point.md)).
 
 ## Boundaries
 
 - Rules never contain procedure. Procedure never contains triggers.
-- The installer does file placement only. Every judgment call — reconciling a customised rule
-  file, classifying existing pages, moving anything — belongs to the agent working with the
-  user.
+- The installer does file placement only, into `memory-bank/_xac/` and nowhere else. Every
+  judgment call — merging the section into a user's `AGENTS.md`, retiring an older install,
+  classifying existing pages, moving anything — belongs to the agent working with the user,
+  through `SETUP.md`.
 - In a user's project, the memory bank holds transient-to-durable knowledge; anything that
   must survive with guarantees belongs in that project's own `docs/`. This repo follows its
   own rule: product rationale lives here in `docs/`, and the repo runs no memory bank at all.
@@ -44,28 +49,31 @@ that must always happen lives in an always-applied rule, and skills carry only t
 This repo is the factory. The product lives under `template/` and ships verbatim:
 
 ```text
-template/
-├── .cursor/rules/     the always-on product rules, plus opt-in caveman.mdc
-├── .cursor/skills/    the fourteen skills
-├── memory-bank/       the scaffold — _templates/ and .gitkeep markers only
-└── AGENTS.md          routing block for non-Cursor harnesses
-bin/cli.mjs            the installer: maps template/ one-to-one into the target project
+template/memory-bank/_xac/
+├── AGENTS.block.md    the section setup places in the project's AGENTS.md, markers included
+├── SETUP.md           guided setup and upgrade, run by the agent with the user
+├── skills/            the fourteen skills
+├── templates/         page shapes
+└── modules/           opt-in modules, such as caveman.md
+bin/cli.mjs            the installer: copies template/ one-to-one into the target project
 docs/                  factory documentation — never ships
-.cursor/rules/         one compact factory rule — never ships
+AGENTS.md              this repo's own instructions — never ships
 ```
 
 `files` in `package.json` is just `bin` plus `template`, so nothing repo-specific can reach
-the tarball by construction. `isShippable` in `bin/cli.mjs` guards the two remaining
-invariants at install time: personal style modules are opt-in (TTY prompt, or `--personal` /
-`--no-personal` for non-interactive runs), and `memory-bank/` may only
-carry the scaffold. The CLI refuses to install into the package root itself. See
-[ADR 7](decisions/0007-template-directory-separates-product-from-factory.md).
+the tarball by construction. The installer also refuses to copy anything under `template/`
+that sits outside `memory-bank/_xac/`, and refuses to install into the package root itself.
+See [ADR 7](decisions/0007-template-directory-separates-product-from-factory.md) and
+[ADR 12](decisions/0012-agents-md-is-the-entry-point.md).
 
 ## Patterns in use
 
-- **Copy and park.** The installer creates missing files and parks conflicts as `<name>.new`.
-  It never overwrites and never merges. See `bin/cli.mjs` and
-  [ADR 3](decisions/0003-installer-copies-and-parks-conflicts.md).
+- **Copy, then guide.** The installer copies into the one directory XAC owns and overwrites
+  there; it never writes elsewhere, never merges, never deletes. `SETUP.md` detects the case,
+  summarises every change, and applies only what the user approves. On upgrade, `git diff` on
+  `AGENTS.block.md` is the exact change to carry into the project's section. See
+  [ADR 3](decisions/0003-installer-copies-and-parks-conflicts.md) and
+  [ADR 12](decisions/0012-agents-md-is-the-entry-point.md).
 - **Announce or stage.** In user projects, cheap reversible memory writes are applied and
   reported; consequential ones are staged to `_pending/` and wait. See
   [ADR 2](decisions/0002-milestone-driven-memory-writes.md).

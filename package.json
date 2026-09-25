@@ -1,9 +1,13 @@
 {
   "name": "xac",
-  "version": "0.1.0",
-  "description": "Memory bank and agent rules for disciplined AI-assisted development in Cursor",
+  "version": "0.2.0",
+  "description": "Memory bank and agent rules for disciplined AI-assisted development, driven by AGENTS.md",
   "keywords": [
+    "agents-md",
     "cursor",
+    "claude-code",
+    "codex",
+    "opencode",
     "memory-bank",
     "ai-agents",
     "agent-rules",

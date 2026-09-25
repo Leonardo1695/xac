@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
-import { stdin as input, stdout as output } from "node:process";
-import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // The product lives under template/, kept apart from the files that run this repo itself.
 const templateRoot = join(packageRoot, "template");
 const targetRoot = process.cwd();
-
 const isDryRun = process.argv.includes("--dry-run");
-const flagPersonal = process.argv.includes("--personal");
-const flagNoPersonal = process.argv.includes("--no-personal");
+
+// The one directory XAC owns in a project. The installer writes here and nowhere else;
+// everything outside it is set up by the agent with the user (ADR 12).
+const XAC_ROOT = "memory-bank/_xac";
+const RETIRED_FLAGS = ["--personal", "--no-personal"];
 
 // Lowercased because Windows reports the same directory with either drive-letter case.
 if (targetRoot.toLowerCase() === packageRoot.toLowerCase()) {
@@ -21,105 +21,38 @@ if (targetRoot.toLowerCase() === packageRoot.toLowerCase()) {
   process.exit(1);
 }
 
-if (flagPersonal && flagNoPersonal) {
-  console.error("Use only one of --personal or --no-personal.");
-  process.exit(1);
-}
-
-const PAYLOAD_ROOTS = [".cursor/rules", ".cursor/skills", "memory-bank"];
-const PAYLOAD_FILES = ["AGENTS.md"];
-// Opt-in modules: asked on a TTY, or forced by --personal / skipped by --no-personal.
-const PERSONAL_MODULES = [
-  {
-    paths: [".cursor/rules/caveman.mdc"],
-    prompt: "Install caveman chat style (terse agent prose)? [y/N] ",
-  },
-];
-const PERSONAL_RULES = PERSONAL_MODULES.flatMap((module) => module.paths);
-const ALTERNATE_BANK_PATHS = [".cursor/memory-bank", ".cursor/rules/memory-bank"];
-
 function toPosix(pathValue) {
   return pathValue.split(sep).join("/");
 }
 
 function listFilesRecursively(absoluteDir) {
+  if (!existsSync(absoluteDir)) {
+    return [];
+  }
   const found = [];
   for (const entry of readdirSync(absoluteDir, { withFileTypes: true })) {
     const absolutePath = join(absoluteDir, entry.name);
-    if (entry.isDirectory()) {
-      found.push(...listFilesRecursively(absolutePath));
-    } else {
-      found.push(absolutePath);
-    }
+    found.push(...(entry.isDirectory() ? listFilesRecursively(absolutePath) : [absolutePath]));
   }
   return found;
 }
 
-async function askYesNo(question, defaultYes = false) {
-  const rl = createInterface({ input, output });
-  try {
-    const answer = (await rl.question(question)).trim().toLowerCase();
-    if (answer === "") {
-      return defaultYes;
-    }
-    return answer === "y" || answer === "yes";
-  } finally {
-    rl.close();
-  }
+function relativePaths(root, absoluteDir) {
+  return listFilesRecursively(absoluteDir).map((absolutePath) => toPosix(relative(root, absolutePath)));
 }
 
-// Flags win. TTY asks per module (default no). Non-TTY / CI defaults to off.
-async function resolvePersonalPaths() {
-  if (flagPersonal) {
-    return new Set(PERSONAL_RULES);
-  }
-  if (flagNoPersonal) {
-    return new Set();
-  }
-  if (!input.isTTY || !output.isTTY) {
-    return new Set();
-  }
-
-  const selected = new Set();
-  for (const module of PERSONAL_MODULES) {
-    if (await askYesNo(module.prompt, false)) {
-      for (const path of module.paths) {
-        selected.add(path);
-      }
-    }
-  }
-  return selected;
+// Anything under template/ outside the owned directory is never shipped, so a stray file
+// there cannot reach a user's project.
+function collectPayload() {
+  return relativePaths(templateRoot, templateRoot)
+    .filter((posixPath) => posixPath.startsWith(`${XAC_ROOT}/`))
+    .sort();
 }
 
-// Everything under template/ ships, with two guards: personal style modules are opt-in, and
-// memory-bank/ may only ever carry the scaffold — templates and directory markers.
-function isShippable(posixPath, personalPaths) {
-  if (PERSONAL_RULES.includes(posixPath) && !personalPaths.has(posixPath)) {
-    return false;
-  }
-  if (posixPath.startsWith("memory-bank/")) {
-    return posixPath.startsWith("memory-bank/_templates/") || posixPath.endsWith("/.gitkeep");
-  }
-  return true;
-}
-
-function collectPayload(personalPaths) {
-  const payload = [];
-  for (const root of PAYLOAD_ROOTS) {
-    const absoluteRoot = join(templateRoot, root);
-    if (!existsSync(absoluteRoot)) {
-      continue;
-    }
-    for (const absolutePath of listFilesRecursively(absoluteRoot)) {
-      payload.push(toPosix(relative(templateRoot, absolutePath)));
-    }
-  }
-  for (const file of PAYLOAD_FILES) {
-    if (existsSync(join(templateRoot, file))) {
-      payload.push(file);
-    }
-  }
-  return payload.filter((posixPath) => isShippable(posixPath, personalPaths)).sort();
+// git with core.autocrlf checks these files out with CRLF endings. That is the same content,
+// and reporting it as an update on every run would bury the real ones.
+function withoutCarriageReturns(bytes) {
+  return Buffer.from(bytes.toString("utf8").replaceAll("\r\n", "\n"), "utf8");
 }
 
 function classify(posixPath) {
@@ -128,108 +61,82 @@ function classify(posixPath) {
     return "create";
   }
   const sourceBytes = readFileSync(join(templateRoot, posixPath));
-  if (sourceBytes.equals(readFileSync(targetPath))) {
-    return "identical";
-  }
-  // A customised target stays different forever, so re-parking it on every run would report
-  // the same conflict indefinitely.
-  const parkedPath = `${targetPath}.new`;
-  if (existsSync(parkedPath) && sourceBytes.equals(readFileSync(parkedPath))) {
-    return "parked";
-  }
-  return "conflict";
+  const targetBytes = readFileSync(targetPath);
+  const isSame =
+    sourceBytes.equals(targetBytes) ||
+    withoutCarriageReturns(sourceBytes).equals(withoutCarriageReturns(targetBytes));
+  return isSame ? "identical" : "update";
 }
 
-function write(posixPath, action) {
-  const sourcePath = join(templateRoot, posixPath);
-  const targetPath = join(targetRoot, action === "conflict" ? `${posixPath}.new` : posixPath);
+function write(posixPath) {
   if (isDryRun) {
     return;
   }
+  const targetPath = join(targetRoot, posixPath);
   mkdirSync(dirname(targetPath), { recursive: true });
-  copyFileSync(sourcePath, targetPath);
+  copyFileSync(join(templateRoot, posixPath), targetPath);
 }
 
-function findMisplacedBanks() {
-  return ALTERNATE_BANK_PATHS.filter((candidate) => existsSync(join(targetRoot, candidate)));
+// Files a previous version shipped and this one does not. Reported, never deleted:
+// removing them is part of the guided upgrade.
+function findStale(payload) {
+  const shipped = new Set(payload);
+  return relativePaths(targetRoot, join(targetRoot, XAC_ROOT)).filter((path) => !shipped.has(path));
 }
 
-function printNextSteps(needsReconcile) {
-  if (needsReconcile) {
-    console.log("\nNext: XAC parked *.new files need a reconcile (rules and skills too).");
-    console.log("Ask your agent, for example:\n");
-    console.log("  Run the memory-migrate skill.\n");
+function printList(heading, paths) {
+  if (paths.length === 0) {
     return;
   }
-
-  console.log("\nNext:");
-  console.log("  New XAC project — ask your agent:");
-  console.log("    Initialise the memory bank from memory-bank/_templates/.");
-  console.log("");
-  console.log("  Existing project memory (any layout), or *.new beside rules/skills — ask instead:");
-  console.log("    Run the memory-migrate skill.\n");
+  console.log(`\n${heading}`);
+  for (const path of paths) {
+    console.log(`  ${path}`);
+  }
 }
 
-function report(created, conflicts, alreadyParked, identical, misplacedBanks) {
+function report(buckets, stale) {
   const prefix = isDryRun ? "would " : "";
-  const needsReconcile = conflicts.length > 0 || alreadyParked.length > 0 || misplacedBanks.length > 0;
-
-  if (created.length > 0) {
-    console.log(`\n${prefix}created ${created.length} file(s):`);
-    for (const path of created) {
-      console.log(`  ${path}`);
-    }
+  printList(`${prefix}create ${buckets.create.length} file(s):`, buckets.create);
+  printList(`${prefix}update ${buckets.update.length} file(s):`, buckets.update);
+  if (buckets.update.length > 0) {
+    console.log(`\n${XAC_ROOT}/ belongs to XAC and is overwritten on upgrade.`);
+    console.log(`git diff ${XAC_ROOT}/ shows exactly what changed.`);
   }
-
-  if (conflicts.length > 0) {
-    console.log(`\n${prefix}parked ${conflicts.length} XAC conflict(s) as *.new (original left alone):`);
-    for (const path of conflicts) {
-      console.log(`  ${path}.new`);
-    }
-    console.log("\nThe *.new file is the incoming XAC version. The existing file is yours.");
-    console.log("This includes .cursor/rules/ and .cursor/skills/, not only memory-bank/.");
+  if (buckets.identical.length > 0) {
+    console.log(`\nunchanged: ${buckets.identical.length} file(s) already match.`);
   }
-
-  if (alreadyParked.length > 0) {
-    console.log(`\nawaiting reconciliation: ${alreadyParked.length} file(s) already parked as .new.`);
+  printList(`no longer shipped, left in place: ${stale.length} file(s):`, stale);
+  if (buckets.create.length === 0 && buckets.update.length === 0) {
+    console.log("\nNothing to copy.");
   }
-
-  if (identical.length > 0) {
-    console.log(`\nunchanged: ${identical.length} file(s) already match.`);
-  }
-
-  if (created.length === 0 && conflicts.length === 0) {
-    console.log("\nNothing to do.");
-  }
-
-  if (misplacedBanks.length > 0) {
-    console.log("\nFound a memory bank outside the project root:");
-    for (const path of misplacedBanks) {
-      console.log(`  ${path}`);
-    }
-    console.log("The canonical location is memory-bank/ at the project root.");
-    console.log("Nothing was moved. memory-migrate will propose consolidating it.");
-  }
-
-  printNextSteps(needsReconcile);
-  console.log(isDryRun ? "XAC dry-run complete.\n" : "XAC install complete.\n");
 }
 
-async function main() {
-  console.log(isDryRun ? "\nXAC — dry-run (no files written)" : "\nXAC — installing agent memory, rules, and skills");
+function printNextSteps() {
+  console.log("\nNext — nothing outside memory-bank/_xac/ has changed yet. Ask your agent:\n");
+  console.log(`  Read ${XAC_ROOT}/SETUP.md and set up XAC.\n`);
+  console.log("It works out whether this is a fresh install or an upgrade, shows you every");
+  console.log("change it would make, and waits for your approval.\n");
+}
 
-  const personalPaths = await resolvePersonalPaths();
-  const buckets = { create: [], conflict: [], parked: [], identical: [] };
+function main() {
+  console.log(isDryRun ? "\nXAC — dry-run (no files written)" : `\nXAC — copying into ${XAC_ROOT}/`);
+  if (RETIRED_FLAGS.some((flag) => process.argv.includes(flag))) {
+    console.log("--personal and --no-personal are no longer used: setup offers opt-in modules.");
+  }
 
-  for (const posixPath of collectPayload(personalPaths)) {
+  const payload = collectPayload();
+  const buckets = { create: [], update: [], identical: [] };
+  for (const posixPath of payload) {
     const action = classify(posixPath);
     buckets[action].push(posixPath);
-    if (action === "create" || action === "conflict") {
-      write(posixPath, action);
+    if (action !== "identical") {
+      write(posixPath);
     }
   }
 
-  report(buckets.create, buckets.conflict, buckets.parked, buckets.identical, findMisplacedBanks());
+  report(buckets, findStale(payload));
+  printNextSteps();
+  console.log(isDryRun ? "XAC dry-run complete.\n" : "XAC copy complete.\n");
 }
 
 main();

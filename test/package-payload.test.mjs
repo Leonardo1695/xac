@@ -30,9 +30,12 @@ function packedPaths() {
   return packed;
 }
 
-test("the tarball carries only bin/, template/, and npm's own three files", () => {
-  for (const path of packedPaths()) {
-    const isPayload = path.startsWith("bin/") || path.startsWith("template/");
+test("the tarball carries only bin/, template/memory-bank/_xac/, and npm's own three files", () => {
+  const packed = packedPaths();
+
+  assert.ok(packed.includes("template/memory-bank/_xac/AGENTS.block.md"), "the payload is missing");
+  for (const path of packed) {
+    const isPayload = path.startsWith("bin/") || path.startsWith("template/memory-bank/_xac/");
     assert.ok(
       isPayload || ALWAYS_PACKED.includes(path),
       `${path} would ship but is neither payload nor npm metadata`,
@@ -40,23 +43,12 @@ test("the tarball carries only bin/, template/, and npm's own three files", () =
   }
 });
 
-test("the tarball carries no memory bank content beyond the scaffold", () => {
-  const bankPaths = packedPaths().filter((path) => path.startsWith("template/memory-bank/"));
-
-  assert.ok(bankPaths.length > 0, "the memory bank scaffold is missing from the tarball");
-  for (const path of bankPaths) {
-    const isScaffold =
-      path.startsWith("template/memory-bank/_templates/") || path.endsWith("/.gitkeep");
-    assert.ok(isScaffold, `${path} is memory bank content, not scaffold`);
-  }
-});
-
 test("the tarball carries no factory files", () => {
   const packed = packedPaths();
 
   const factoryPaths = [
+    "AGENTS.md",
     "docs/roadmap.md",
-    ".cursor/rules/repo-source.mdc",
     "test/guards.test.mjs",
     "test-support/helpers.mjs",
   ];

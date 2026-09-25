@@ -10,7 +10,7 @@ Give your agents continuity across sessions, and hold them to the practices that
 generated code survive contact with production.
 
 ![Node](https://img.shields.io/badge/node-%E2%89%A5%2018-3c873a?style=flat-square)
-![Cursor](https://img.shields.io/badge/built%20for-Cursor-000000?style=flat-square)
+![AGENTS.md](https://img.shields.io/badge/runs%20on-AGENTS.md-000000?style=flat-square)
 ![Markdown](https://img.shields.io/badge/runtime-none%20(markdown)-0366d6?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
@@ -41,11 +41,14 @@ Three layers of plain Markdown, dropped into any repo.
 | Layer | Path | What it does |
 |---|---|---|
 | **Memory** | `memory-bank/` | Versioned project memory that grows as you work — decisions with their rejected alternatives, traps with their root cause, procedures worth replaying, tickets across backlog, current cycle, and archived history, approved design specs, and a handoff so the next session resumes instead of restarting |
-| **Rules** | `.cursor/rules/` | Always loaded. Plan before acting, verify before claiming done, one coherent increment at a time, tests in the same change |
-| **Skills** | `.cursor/skills/` | Loaded on demand. Writing a memory page, promoting an insight, refactor and test and security passes, PR descriptions |
+| **Rules** | A marked section of `AGENTS.md` | Always loaded. Plan before acting, verify before claiming done, one coherent increment at a time, tests in the same change |
+| **Skills** | `memory-bank/_xac/skills/` | Read on demand, from a catalog in the same section. Writing a memory page, promoting an insight, refactor and test and security passes, PR descriptions |
 
 Nothing runs at work time. No database, no embeddings, no daemon. Every file is something you
 can open, read, grep, and diff.
+
+One `AGENTS.md` works everywhere that reads it: Cursor, Claude Code, Codex, OpenCode, and any
+other harness that follows the convention. There are no per-tool directories to keep in sync.
 
 ## Quick start
 
@@ -55,60 +58,43 @@ From the target project (not the XAC source repo):
 npx github:Leonardo1695/xac
 ```
 
-The installer prints `XAC — installing agent memory, rules, and skills`, then on an
-interactive terminal asks:
+The installer copies XAC into `memory-bank/_xac/` and nothing else. It does not touch your
+`AGENTS.md`, your `CLAUDE.md`, or anything you wrote. Then it tells you what to ask your agent:
 
 ```text
-Install caveman chat style (terse agent prose)? [y/N]
+Next — nothing outside memory-bank/_xac/ has changed yet. Ask your agent:
+
+  Read memory-bank/_xac/SETUP.md and set up XAC.
 ```
 
-Default is no. Flags skip the question (useful for scripts and CI):
+`npx github:Leonardo1695/xac --dry-run` previews the copy without writing anything.
 
-```bash
-npx github:Leonardo1695/xac --dry-run       # preview only — XAC dry-run complete
-npx github:Leonardo1695/xac --personal      # include caveman, no prompt
-npx github:Leonardo1695/xac --no-personal   # skip caveman, no prompt
-```
+### Setup is a conversation, not a script
 
-When it finishes without conflicts, it tells you what to ask the agent next:
+`SETUP.md` is a procedure for the agent, run with you. It works out which case this is — a
+fresh project, an upgrade, an older XAC install in the Cursor layout, or memory kept in some
+other layout — and shows you one summary of everything it would create, change, migrate, or
+remove. Nothing outside `memory-bank/_xac/` changes until you approve it.
 
-```text
-Next:
-  New XAC project — ask your agent:
-    Initialise the memory bank from memory-bank/_templates/.
+Then it:
 
-  Existing project memory (any layout), or *.new beside rules/skills — ask instead:
-    Run the memory-migrate skill.
+- places the XAC section in `AGENTS.md`, creating the file or merging into yours where you
+  choose, between `<!-- xac:begin -->` and `<!-- xac:end -->` markers;
+- adds `@AGENTS.md` to your `CLAUDE.md` if you have one, because Claude Code reads `AGENTS.md`
+  only when no `CLAUDE.md` exists, and warns if an `AGENTS.override.md` would hide it from Codex;
+- offers opt-in modules such as caveman (terse agent prose), default no;
+- creates the memory bank's directories, then seeds the bank with `memory-bootstrap` if the repo
+  has history, or hands over to `memory-migrate` if you already keep memory somewhere else;
+- checks its own work against a list before reporting.
 
-XAC install complete.
-```
+The spine is filled from the repo and your answers — the agent will not invent project facts.
 
-Use the first prompt on a greenfield project. Use the second if you already have memory
-somewhere (XAC-shaped or not) or if the install parked `*.new` files.
+### What the installer touches
 
-`AGENTS.md` identifies the project as using XAC and links to
-https://github.com/Leonardo1695/xac. Init fills the spine from the repo and
-your answers — it will not invent project facts. Migrate asks where source memory lives
-(`memory-bank/`, `.cursor/memory-bank/`, `.cursor/rules/memory-bank/`, or a path you
-point it at), maps into XAC, and walks parked rule/skill conflicts.
-
-If the installer parks conflicts, the next-steps block is migrate-only:
-
-```text
-Next: XAC parked *.new files need a reconcile (rules and skills too).
-Ask your agent, for example:
-
-  Run the memory-migrate skill.
-```
-
-### Nothing gets overwritten
-
-The installer only creates what is missing. If a file already exists with different content,
-the incoming XAC version lands beside it as `<name>.new` and the original is left alone.
-That includes rules and skills, not only memory bank files. Reconciling the two is a
-conversation between you and the agent via `memory-migrate`, not a guess made by a script.
-
-Re-running is safe and idempotent.
+Only `memory-bank/_xac/`, which belongs to XAC. It creates and overwrites files there, never
+writes anywhere else, never merges, and never deletes. Customisation belongs outside `_xac/` —
+your own lines in `AGENTS.md`, your own skills — where no upgrade reaches it. Re-running is safe
+and idempotent.
 
 ## Flow
 
@@ -118,20 +104,21 @@ How the pieces connect from install through a normal work cycle.
 
 ```mermaid
 flowchart TD
-  A[npx github:Leonardo1695/xac] --> B{Interactive TTY?}
-  B -->|yes| C[Ask: install caveman?]
-  B -->|no / flags| D[--personal or --no-personal]
-  C --> E[Copy rules, skills, memory-bank scaffold]
-  D --> E
-  E --> F{Prior project memory or *.new conflicts?}
-  F -->|no| G[Ask agent: Initialise the memory bank…]
-  F -->|yes| H[Ask agent: Run memory-migrate]
-  H --> I{Where is source memory?}
-  I -->|memory-bank/ or Cursor variants| J[Near-XAC: annotate and map]
-  I -->|elsewhere — you point the path| K[Foreign: map into XAC memory-bank/]
-  J --> L[Reconcile parked *.new rules/skills]
-  K --> L
-  G --> M[Spine filled from repo + your answers]
+  A[npx github:Leonardo1695/xac] --> B[Copy into memory-bank/_xac/ — nothing else]
+  B --> C[Ask agent: Read memory-bank/_xac/SETUP.md and set up XAC]
+  C --> D[Detect: fresh, upgrade, Cursor-layout install, foreign memory]
+  D --> E[One summary: create, change, migrate, remove]
+  E --> F{You approve?}
+  F -->|parts or all| G[Place or update the AGENTS.md section; wire CLAUDE.md]
+  F -->|no| X[Nothing changes]
+  G --> H{Memory bank?}
+  H -->|none, repo has history| I[memory-bootstrap]
+  H -->|none, new project| J[Spine from templates + your answers]
+  H -->|elsewhere or another layout| K[memory-migrate]
+  H -->|already XAC| L[Fill gaps only]
+  I --> M[Verify checklist]
+  J --> M
+  K --> M
   L --> M
   M --> N[Ready to work]
 ```
@@ -140,7 +127,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  S[Session open] --> R[Rules always loaded]
+  S[Session open] --> R[AGENTS.md section always loaded]
   S --> H[Read hot memory: index, handoff, activeContext]
   H --> P[plan-spec: what / how / not-wanted / verify]
   P --> W[Implement one increment]
@@ -163,12 +150,14 @@ flowchart TD
 flowchart LR
   subgraph ambient ["Ambient — agent reaches when relevant"]
     MS[memory-session]
+    MR[memory-recall]
     MW[memory-write]
     MM[memory-maintain]
     PS[plan-spec]
   end
 
   subgraph named ["Named — you ask for them"]
+    MB[memory-bootstrap]
     MIG[memory-migrate]
     ID[idea-capture]
     DD[design-discovery]
@@ -284,10 +273,12 @@ Numbers below are measured on the shipped files, estimated at ~4 characters per 
 
 | Always in context | Size | ≈ Tokens |
 |---|---|---|
-| The four rules files | 17.4 kB | 4,300 |
-| Skill catalog — 14 one-line descriptions; a skill's body loads only when it runs | 4.8 kB | 1,200 |
-| `AGENTS.md` router — names XAC + repo link + the recall entry point; for non-Cursor harnesses; some load it alongside the rules | 2.6 kB | 645 |
-| `caveman.mdc`, only if opted in (prompt or `--personal`) | 3.4 kB | 900 |
+| The XAC section of `AGENTS.md` — every rule, plus a catalog of the 14 skills; a skill's body loads only when it runs | 12.8 kB | 3,200 |
+| `caveman.md`, only if opted in during setup | 3.3 kB | 820 |
+
+The section has a budget of 15 kB, enforced by a test. It shares Codex's 32 KiB cap on
+`AGENTS.md` with your own instructions, and Claude Code's guidance is that instruction files
+past about 200 lines are followed less reliably.
 
 On top of that fixed cost, a session open reads the hot set — `index.md`,
 `activeContext.md`, `handoff.md` — which is budget-capped around 5k tokens and usually far
@@ -310,14 +301,14 @@ has a hard cap with an audit remedy, or lives outside the default read path:
 | Audit reports (`_lint/`) | Only the last three kept, never loaded by default |
 | Rejection ledger | Capped at fifty entries and six months |
 | `decisions/`, `gotchas/`, `concepts/`, `procedures/` | Loaded cold, one page at a time, found by name through the index — a page's ambient cost is its single index line |
-| The always-on rules themselves | The one surface with no size cap gets the strongest gate: nothing is promoted into `.cursor/rules/` without your explicit yes, because every added line is a permanent per-turn cost |
+| `AGENTS.md` itself | XAC's section is capped by a test; your own part of the file gets the strongest gate: nothing is promoted into it without your explicit yes, because every added line is a permanent per-session cost |
 
 ## Layout
 
-The installer delivers the empty shape of this — 52 files, about 84 kB: the rules, the
-skills, the page templates in `_templates/`, and directory markers. No content. The spine
-files appear when the agent initialises the bank from the repo and your answers; every
-other page exists only when work produces it. The files that load hot carry the budgets
+The installer delivers `memory-bank/_xac/` — 37 files, about 87 kB: the `AGENTS.md` section,
+the setup procedure, the skills, the page templates, and the opt-in modules. No content.
+Setup creates the directories; the spine files appear when the agent initialises the bank
+from the repo and your answers; every other page exists only when work produces it. The files that load hot carry the budgets
 from the context bill above, and the caps are written into the pages themselves — the
 index template says "under 200 lines" in its own header comment, `activeContext.md` says
 "overwrite, never append" — so any agent reading a page also reads its discipline.
@@ -348,7 +339,12 @@ memory-bank/
 ├── sessions/           episodic record, decays over time
 ├── _pending/           staged pages awaiting your approval
 ├── _lint/              audit findings
-└── _templates/         page shapes
+└── _xac/               XAC itself — replaced on upgrade, never edited
+    ├── AGENTS.block.md the section that lives in AGENTS.md
+    ├── SETUP.md        guided setup and upgrade
+    ├── skills/         the fourteen skills
+    ├── templates/      page shapes
+    └── modules/        opt-in modules
 ```
 
 Every page carries frontmatter, so pages can be found by search, retired when stale, and traced
@@ -371,18 +367,19 @@ evidence:
 
 ## Skills
 
-Ambient skills load when relevant; named skills load when you ask. See [Flow](#flow) for
-how they sit in the work loop.
+Each skill is a Markdown procedure in `memory-bank/_xac/skills/`. The catalog in `AGENTS.md`
+tells the agent when to read which: ambient skills when the situation calls for them, named
+skills only when you ask. See [Flow](#flow) for how they sit in the work loop.
 
 | Skill | Loads | Does |
 |---|---|---|
-| `memory-session` | automatically | Opens and closes a work session against the memory bank |
-| `memory-recall` | automatically | Finds what the bank already knows, before you assume it knows nothing |
-| `memory-write` | automatically | Writes a page with the right family, frontmatter, links, and index entry |
-| `memory-maintain` | automatically | Promotes candidates behind the gate; audits for contradictions, stale pages, duplicates |
-| `plan-spec` | automatically | Turns a request into a specified, verifiable task and gates it before execution |
+| `memory-session` | when relevant | Opens and closes a work session against the memory bank |
+| `memory-recall` | when relevant | Finds what the bank already knows, before you assume it knows nothing |
+| `memory-write` | when relevant | Writes a page with the right family, frontmatter, links, and index entry |
+| `memory-maintain` | when relevant | Promotes candidates behind the gate; audits for contradictions, stale pages, duplicates |
+| `plan-spec` | when relevant | Turns a request into a specified, verifiable task and gates it before execution |
 | `memory-bootstrap` | on request | Seeds an empty bank from a codebase that already has history |
-| `memory-migrate` | on request | Maps any existing project memory into XAC; reconciles parked `*.new` files |
+| `memory-migrate` | on request | Maps any existing project memory into XAC, whatever its layout |
 | `design-discovery` | on request | Interviews you, researches references, drafts interactive HTML mocks, records the approved direction |
 | `idea-capture` | on request | Parks an idea in the backlog in seconds; refines it toward ready when asked |
 | `cycle-close` | on request | Compresses a finished cycle into one archive page, deletions gated on your approval |
@@ -461,13 +458,18 @@ the design:
 
 ## Updating an existing install
 
-Re-run the installer. Files that already match are skipped, new files are added, and anything you
-have customised is left alone with the new XAC version parked as `<name>.new` beside it
-(rules and skills included). Then ask the agent:
+Re-run the installer. It overwrites `memory-bank/_xac/` with the new version and reports any
+file there it no longer ships, without deleting it. Then ask the agent:
 
-> Run the `memory-migrate` skill.
+> Read memory-bank/_xac/SETUP.md and set up XAC.
 
-It will ask where existing memory lives (XAC paths or elsewhere) and walk parked conflicts.
+It sees the existing section in `AGENTS.md`, reads what XAC changed from
+`git diff memory-bank/_xac/`, and applies exactly that change to the section, keeping any local
+edits the change does not touch. You see the diff before anything is applied.
+
+**Coming from the Cursor layout** (`.cursor/rules/*.mdc`, `.cursor/skills/`)? The same prompt
+handles it. Setup lists XAC's old files for removal, carries over any lines you added to them,
+and leaves the rest of `.cursor/` alone. Nothing is removed without your approval.
 
 ## Forking
 
@@ -475,8 +477,8 @@ XAC is opinionated on purpose. If an opinion does not fit your team, fork it and
 rules and skills are Markdown, there is nothing to compile, and nothing to unpick. Adjusting the
 template for your own conventions is expected, not a workaround.
 
-The repository mirrors the split: everything that installs lives under `template/`, byte for
-byte; `bin/cli.mjs` copies it; `docs/` holds the architecture notes and decision records that
+The repository mirrors the split: everything that installs lives under
+`template/memory-bank/_xac/`, byte for byte; `bin/cli.mjs` copies it; `docs/` holds the architecture notes and decision records that
 explain why it is shaped this way.
 
 ## Requirements
