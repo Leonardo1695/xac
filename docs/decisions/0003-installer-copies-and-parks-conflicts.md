@@ -1,7 +1,12 @@
 # 3. Installer copies and parks conflicts, never overwrites or merges
 
 Date: 2026-08-05
-Status: accepted
+Status: accepted, amended by [ADR 12](0012-agents-md-is-the-entry-point.md)
+
+Amended 2026-09-25. The installer now writes only inside `memory-bank/_xac/`, which XAC owns, and
+overwrites there; it writes nothing anywhere else, so there is nothing left to park. The principle
+below — the installer places files, the agent and the user make every judgment call — stands.
+Installer-owned markers remain rejected; ADR 12 uses them as an agent convention instead.
 
 ## Context
 

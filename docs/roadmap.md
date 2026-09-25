@@ -1,7 +1,11 @@
 # Roadmap and known issues
 
-State as of 2026-08-05. This file replaces a memory bank for this repo: update it when
+State as of 2026-09-25. This file replaces a memory bank for this repo: update it when
 milestones land, trim what ships.
+
+The next phase of work is planned in
+[`plans/ai-memory-convergence.md`](plans/ai-memory-convergence.md), with its decisions recorded as
+[ADRs 8–12](decisions/README.md). Read the plan before starting anything numbered below it.
 
 ## Done
 
@@ -16,9 +20,10 @@ milestones land, trim what ships.
   never-by-default list for history and future (`sessions/`, backlog, archive, `_pending/`,
   `log.md`, `design/` mocks), ~100-line spine budgets with an audit check, aligned across
   `memory-bank.mdc`, `memory-session`, `memory-maintain`, and `AGENTS.md`.
-- Twelve skills — ambient: `memory-session`, `memory-write`, `memory-maintain`, `plan-spec`;
-  named-only: `memory-migrate`, `refactor-pass`, `test-pass`, `security-audit`,
-  `pr-description`, `design-discovery`, `cycle-close`, `idea-capture`.
+- Fourteen skills — ambient: `memory-session`, `memory-recall`, `memory-write`,
+  `memory-maintain`, `plan-spec`; named-only: `memory-bootstrap`, `memory-migrate`,
+  `refactor-pass`, `test-pass`, `security-audit`, `pr-description`, `design-discovery`,
+  `cycle-close`, `idea-capture`.
 - Installer verified by hand on Windows: clean install, identical skip, conflict parked as
   `.new`, already-parked recognised, misplaced bank detected without being moved, idempotent
   re-runs. Personal modules are opt-in via TTY prompt or `--personal` / `--no-personal`.
@@ -26,40 +31,54 @@ milestones land, trim what ships.
 - Context growth audit: session pages now expire (~3 months), `_lint/` joined the
   never-loaded tier with reports pruned to the last three, and the README documents the
   measured context bill with the cap behind each growth surface.
+- Tests for `bin/cli.mjs` (2026-08-22): 15 tests over `node --test`, no dependencies, each
+  driving the real CLI against a temp directory. Covers the four install paths, the payload
+  boundary, both guards, `--dry-run`, personal opt-in, and what `npm pack` would ship.
+  Mutation-checked against seven deliberate regressions. `npm test` is now the one
+  verification command. This closes the project's own "every change ships with its test"
+  violation.
+- Convergence plan, phase 1 (2026-08-22): `memory-bootstrap`, `memory-recall`, the `authority`
+  read rule, question-style index lines, the "never record" rule for secrets, and the rule diet.
+  The diet came out at net −40 bytes, not the −1.1 kB planned; the budget held rather than shrank.
+  Reviewed before commit: `memory-recall`'s entity search matched file names and never found
+  anything, and its exclusion globs did not exclude from the project root — both fixed and checked
+  against a fixture bank. `_index/` joined the never-loaded lists, `memory-bootstrap` gained a
+  POSIX command, and the pack test runs `npm pack` once without the DEP0190 warning.
 
 ## Next
 
-1. **Tests for `bin/cli.mjs`** — the four install paths (create, identical, conflict,
-   parked), misplaced-bank detection, the root-refusal guard, and one test asserting the
-   tarball carries only `bin/` and `template/` paths. This closes the project's own
-   "every change ships with its test" violation.
-2. **Confirm the repository name.** `README.md` and `package.json` hardcode
-   `github.com/Leonardo1695/xac`; the working directory is `memory-bank-study`. If the repo
-   lands under another name, seven URLs need updating.
-3. **Dogfood the loop in a scratch project** (not in this repo): capture an idea, pull it
-   into a cycle, run `design-discovery`, implement, close the cycle. Adjust rules based on
-   what the triggers actually do.
-4. **Dry-run `memory-migrate`** against a copy of a project with a legacy or foreign
-   memory layout (not only an XAC-shaped `memory-bank/`).
+1. **Relocation — phase R of the plan** ([ADR 12](decisions/0012-agents-md-is-the-entry-point.md),
+   plan W8). The always-on rules move into a section of `AGENTS.md`; everything else moves into
+   `memory-bank/_xac/`; the installer only copies there; setup and upgrade become an agent-guided
+   `SETUP.md` that detects the case and summarises every change before making it.
+2. **Dogfood the loop in a scratch project** (not in this repo), set up through `SETUP.md`:
+   capture an idea, pull it into a cycle, run `design-discovery`, implement, close the cycle.
+   Adjust rules based on what the triggers actually do.
+3. **Dry-run the upgrade path** against a copy of a project installed with the Cursor layout, and
+   `memory-migrate` against a foreign memory layout (not only an XAC-shaped `memory-bank/`).
+4. **Convergence plan, phases 2–4** — conversational lifecycle, the handoff fields, then the
+   residue.
 
 ## Deferred, deliberately
 
-- Optional `beforeShellExecution` hook for git gating — would make permission rules binding
-  rather than advisory; writes nothing to memory. Polish, not foundation.
+- All lifecycle hooks, including the `beforeShellExecution` git gate. Reopened and declined a
+  second time in [ADR 8](decisions/0008-lifecycle-is-conversational.md), on portability and
+  maintenance grounds rather than the original overhead argument. `PreCompact` is recorded there
+  as the single acknowledged exception should it ever be revisited.
 - `design-review` pass diffing built UI against the approved mock via screenshots, and
   self-screenshotting during drafting.
-- Always-on rule diet: move frontmatter field details from `memory-bank.mdc` into
-  `memory-write`, compress trigger tables. Revisit after the loop has been exercised.
-- Marker-delimited managed blocks for smarter upgrades (see
-  [ADR 3](decisions/0003-installer-copies-and-parks-conflicts.md)).
+- Always-on rule diet — no longer deferred. Scoped in the convergence plan as W7 and scheduled
+  for phase 1, because it pays for the rule text that phase adds. Trigger tables stay in the
+  rules; the frontmatter details and the promotion-gate reject list move into the skills.
 
 ## Known issues
 
-- `bin/cli.mjs` has no automated tests; everything above was verified by hand.
-- Always-loaded product rules total 17.4 kB, about 4.5k tokens on every turn. Each earned
+- The test suite has only been run on Node 22.18 and Windows, though `package.json` claims
+  `>=18` and the suite uses nothing newer than `cpSync`. macOS, Linux, and Node 18 are unverified.
+- Always-loaded product rules total 17.4 kB, about 4.3k tokens on every turn. Each earned
   its place, but measure before adding more; the README's "context bill" section documents
-  the full footprint and must be re-measured when rules change.
-- The repo is not a git repository yet — `git init`, first commit, and push belong to the
-  owner.
-- `sessionStart` hook capability was never verified. Hooks were dropped for other reasons;
-  the question only matters if they are ever revisited.
+  the full footprint and must be re-measured when rules change. Relocation moves them into
+  `AGENTS.md` with a target under roughly 15 kB, skill catalog included.
+- The payload is still Cursor-shaped: rules in `.cursor/rules/`, skills in `.cursor/skills/`.
+  Claude Code, Codex and OpenCode get only the `AGENTS.md` router and no skills until the
+  relocation lands.

@@ -1,7 +1,11 @@
 # 7. The product lives in template/, apart from the factory
 
 Date: 2026-08-05
-Status: accepted
+Status: accepted, amended by [ADR 12](0012-agents-md-is-the-entry-point.md)
+
+Amended 2026-09-25. The factory/product split stands; the payload's shape changes. `template/`
+will hold only `memory-bank/_xac/`, still mapped one-to-one into the target, and the root's
+`.cursor/rules/` factory rule folds into the root `AGENTS.md`.
 
 ## Context
 

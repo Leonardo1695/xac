@@ -3,6 +3,10 @@
 Date: 2026-08-05
 Status: accepted
 
+Revisited 2026-08-22 in [ADR 8](0008-lifecycle-is-conversational.md), against a wider set of
+harnesses and a narrower use of hooks. Same conclusion, additional reasons; this record still
+stands.
+
 ## Context
 
 Skills are not lifecycle-bound. A skill marked `disable-model-invocation: true` loads only when
