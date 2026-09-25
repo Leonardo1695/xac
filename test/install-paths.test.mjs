@@ -118,7 +118,10 @@ test("a payload file that differs only in line endings counts as unchanged", () 
   try {
     runInstaller(projectRoot);
     const crlfPath = join(projectRoot, EDITED_PATH);
-    const crlfBody = readFileSync(crlfPath, "utf8").replaceAll("\n", "\r\n");
+    // Normalised first: the payload itself is CRLF when this repo was checked out with autocrlf.
+    const crlfBody = readFileSync(crlfPath, "utf8")
+      .replaceAll("\r\n", "\n")
+      .replaceAll("\n", "\r\n");
     writeFileSync(crlfPath, crlfBody);
 
     const result = runInstaller(projectRoot);
