@@ -69,8 +69,10 @@ saves and the output gets worse. Omit `model` so they inherit the parent.
 | Need | Skill |
 |---|---|
 | Start or end a work session | `memory-session` |
+| Find what the bank already knows | `memory-recall` |
 | Write a memory bank page | `memory-write` |
 | Promote, lint, or retire memory | `memory-maintain` |
+| Seed a bank from a codebase that has history | `memory-bootstrap` |
 | Adopt any existing project memory into XAC | `memory-migrate` |
 | Specify and gate a task | `plan-spec` |
 | Clean up after a large change | `refactor-pass` |

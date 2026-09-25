@@ -14,7 +14,12 @@ Installed by [XAC](https://github.com/Leonardo1695/xac).
 4. The rest of the spine (`projectbrief.md`, `productContext.md`, `systemPatterns.md`,
    `techContext.md`, `progress.md`, `designSystem.md`) when returning cold or the task is broad
 5. Only the family pages the index marks relevant. Never load `sessions/`, `tickets/backlog/`,
-   `tickets/archive/`, `_pending/`, `_lint/`, or `log.md` unless the task is about them
+   `tickets/archive/`, `_pending/`, `_lint/`, `_index/`, or `log.md` unless the task is about them
+
+Mid-task, when something might already be answered — a design choice, a trap that feels
+familiar, "didn't we decide this" — search before assuming it is not there: `index.md` first,
+then the `entities` in page frontmatter, then the links out of whatever you hit.
+`.cursor/skills/memory-recall/SKILL.md` has the procedure.
 
 Verification commands live in `memory-bank/techContext.md`. Run them before reporting anything
 as done.

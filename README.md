@@ -284,9 +284,9 @@ Numbers below are measured on the shipped files, estimated at ~4 characters per 
 
 | Always in context | Size | ≈ Tokens |
 |---|---|---|
-| The four rules files | 17.4 kB | 4,500 |
-| Skill catalog — 12 one-line descriptions; a skill's body loads only when it runs | 4 kB | 1,000 |
-| `AGENTS.md` router — names XAC + repo link; for non-Cursor harnesses; some load it alongside the rules | 2.3 kB | 575 |
+| The four rules files | 17.4 kB | 4,300 |
+| Skill catalog — 14 one-line descriptions; a skill's body loads only when it runs | 4.8 kB | 1,200 |
+| `AGENTS.md` router — names XAC + repo link + the recall entry point; for non-Cursor harnesses; some load it alongside the rules | 2.6 kB | 645 |
 | `caveman.mdc`, only if opted in (prompt or `--personal`) | 3.4 kB | 900 |
 
 On top of that fixed cost, a session open reads the hot set — `index.md`,
@@ -314,7 +314,7 @@ has a hard cap with an audit remedy, or lives outside the default read path:
 
 ## Layout
 
-The installer delivers the empty shape of this — 50 files, about 70 kB: the rules, the
+The installer delivers the empty shape of this — 52 files, about 84 kB: the rules, the
 skills, the page templates in `_templates/`, and directory markers. No content. The spine
 files appear when the agent initialises the bank from the repo and your answers; every
 other page exists only when work produces it. The files that load hot carry the budgets
@@ -377,9 +377,11 @@ how they sit in the work loop.
 | Skill | Loads | Does |
 |---|---|---|
 | `memory-session` | automatically | Opens and closes a work session against the memory bank |
+| `memory-recall` | automatically | Finds what the bank already knows, before you assume it knows nothing |
 | `memory-write` | automatically | Writes a page with the right family, frontmatter, links, and index entry |
 | `memory-maintain` | automatically | Promotes candidates behind the gate; audits for contradictions, stale pages, duplicates |
 | `plan-spec` | automatically | Turns a request into a specified, verifiable task and gates it before execution |
+| `memory-bootstrap` | on request | Seeds an empty bank from a codebase that already has history |
 | `memory-migrate` | on request | Maps any existing project memory into XAC; reconciles parked `*.new` files |
 | `design-discovery` | on request | Interviews you, researches references, drafts interactive HTML mocks, records the approved direction |
 | `idea-capture` | on request | Parks an idea in the backlog in seconds; refines it toward ready when asked |

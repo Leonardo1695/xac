@@ -27,7 +27,7 @@ holds the factory: `docs/`, `bin/`, factory-only `.cursor/rules/`, and `test-ins
 | Check | Command | Expected |
 |---|---|---|
 | Root refusal | `node bin/cli.mjs` from the repo root | exits 1, refuses to install into the source repo |
-| Clean install | run the CLI from `test-install/` or an empty dir | full payload created (50 files as of 2026-08-05) |
+| Clean install | run the CLI from `test-install/` or an empty dir | full payload created (52 files as of 2026-08-22) |
 | Idempotent re-run | run it again in the same directory | every payload file unchanged, nothing to do |
 | Conflict path | run over a customised copy of a payload file | `.new` parked beside it, original untouched |
 | Package payload | `npm pack --dry-run` | only `bin/` and `template/` paths, plus npm's own three; under `template/memory-bank/`, only `_templates/` and `.gitkeep` |

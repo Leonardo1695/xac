@@ -11,9 +11,11 @@ evidence: []
 
 # Index
 
-<!-- Pointers only, never content. One line per page: path — what question it answers.
-     Keep under 200 lines. When it outgrows that, merge narrow pages rather than
-     shortening the lines. Write the page first, then add its line here. -->
+<!-- Pointers only, never content. One line per page, phrased as the question a future agent
+     will type — not as a title. Add an alias tail for words the page body does not use:
+       - decisions/0004-http-client.md — why undici and not node-fetch? (http client, pooling)
+     Keep under 200 lines. When it outgrows that, build _index/entities.md first, then merge
+     narrow pages. Write the page first, then add its line here. -->
 
 ## Decisions
 

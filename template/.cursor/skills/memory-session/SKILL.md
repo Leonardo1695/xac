@@ -23,7 +23,7 @@ Scale to the gap since the last session:
 | Days | above plus `progress.md` and relevant family pages |
 | Weeks or unknown | the whole spine, plus the last few `sessions/` pages |
 
-Never open `sessions/`, `tickets/backlog/`, `tickets/archive/`, `_pending/`, `_lint/`, or
+Never open `sessions/`, `tickets/backlog/`, `tickets/archive/`, `_pending/`, `_lint/`, `_index/`, or
 `log.md` unless the task is about them, and never open `design/` mocks except for the ticket
 being implemented. History and future are fetched when named, not carried by default.
 

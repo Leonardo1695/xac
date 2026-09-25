@@ -27,13 +27,18 @@ for it. `gotchas/tls-fingerprint-blocks-http-client.md`, not `gotchas/bug-3.md`.
 
 Copy the template, then set every field deliberately.
 
-- `kind` — matches the family.
-- `tier` — `semantic` for durable knowledge, `procedural` for procedures, `episodic` for
-  anything tied to a moment, `working` for current-state slots.
+- `kind` — matches the family: `decision` | `fact` | `rule` | `gotcha` | `procedure` |
+  `ticket` | `design`.
+- `tier` — how long the page is meant to live.
+  `working` (this session only) | `episodic` (decays) | `semantic` (indefinite, supersede
+  only) | `procedural` (indefinite, decays if never reused). In practice: `semantic` for
+  durable knowledge, `procedural` for procedures, `episodic` for anything tied to a moment,
+  `working` for current-state slots.
 - `pinned` — only for the spine and pages that must never decay. Pinned pages are not
   rewritten without the user's say.
-- `expires_at` — set it whenever the fact is tied to a sprint, a version, or a temporary
-  state. An unset TTL on a temporary fact is how stale claims survive.
+- `expires_at` — `YYYY-MM-DD`. Set it whenever the fact is tied to a sprint, a version, or a
+  temporary state. An unset TTL on a temporary fact is how stale claims survive, and an
+  expired page is stale regardless of `pinned`.
 - `entities` — up to ten lowercase nouns someone might search. This is the recall mechanism;
   a page with no entities is hard to find later.
 - `authority` — `canonical` for the current source of truth, `active` for useful but not
@@ -48,7 +53,13 @@ Copy the template, then set every field deliberately.
 2. Reconcile: search for pages this contradicts, extends, or duplicates. Update them. If it
    replaces one, set the old page's `authority: superseded` and link forward to the new one.
    A new page that leaves a contradiction standing makes the bank less trustworthy, not more.
-3. Add the index line last: `- path — what question it answers`.
+3. Add the index line last, phrased as the question a future agent will actually type — not as
+   a title. Add an alias tail when the page's body uses different words than a searcher would:
+
+       - decisions/0004-http-client.md — why undici and not node-fetch? (http client, pooling)
+
+   `index.md` is the primary recall surface. A line that reads like a filename will not be
+   found, and a page that cannot be found may as well not exist.
 4. Append a `log.md` line if the page marks a milestone.
 
 ## Links

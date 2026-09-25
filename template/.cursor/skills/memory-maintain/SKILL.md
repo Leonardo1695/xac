@@ -64,13 +64,19 @@ Check for:
 | Stale | `expires_at` passed, or the page describes code that has since changed | Update or retire |
 | Duplicate | Two pages answering the same question | Merge into the broader one, supersede the other |
 | Orphan | Index line with no page, or page with no index line | Fix whichever side is missing |
-| Sprawl | `index.md` past 200 lines | Merge narrow pages — do not just shorten lines |
+| Sprawl | `index.md` past 200 lines | Build `_index/entities.md` first, then merge narrow pages. Do not just shorten lines |
+| Entity index drift | `_index/entities.md` exists but a page's `entities` are missing from it | Rebuild the affected lines |
 | Oversized spine | Any spine file past ~100 lines | Shed detail into family pages or the cycle archive; the spine is read hot |
 | Noise | `sessions/` dominating the bank | Retire old episodic pages that produced nothing durable |
 | Missing entities | Page with an empty `entities` list | Add up to ten searchable nouns |
 
 Cite the exact page paths in every finding. Report findings before changing anything, then
 apply the fixes the user approves.
+
+`_index/entities.md` is a grep surface, not a reading surface: one line per entity,
+`- <entity> → path, path`, joining the never-loaded tier so its size costs nothing. Build it
+only when the sprawl row above fires. Below that threshold `index.md` is the better index, and
+a second one is just a second thing to keep true.
 
 ## Retire, never delete
 

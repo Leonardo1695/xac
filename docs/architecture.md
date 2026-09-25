@@ -46,7 +46,7 @@ This repo is the factory. The product lives under `template/` and ships verbatim
 ```text
 template/
 ├── .cursor/rules/     the always-on product rules, plus opt-in caveman.mdc
-├── .cursor/skills/    the twelve skills
+├── .cursor/skills/    the fourteen skills
 ├── memory-bank/       the scaffold — _templates/ and .gitkeep markers only
 └── AGENTS.md          routing block for non-Cursor harnesses
 bin/cli.mjs            the installer: maps template/ one-to-one into the target project
