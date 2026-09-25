@@ -30,8 +30,49 @@ holds the factory: `docs/`, `bin/`, factory-only `.cursor/rules/`, and `test-ins
 | Clean install | run the CLI from `test-install/` or an empty dir | full payload created (50 files as of 2026-08-05) |
 | Idempotent re-run | run it again in the same directory | every payload file unchanged, nothing to do |
 | Conflict path | run over a customised copy of a payload file | `.new` parked beside it, original untouched |
-| Package payload | `npm pack --dry-run` | only `bin/` and `template/` paths; under `template/memory-bank/`, only `_templates/` and `.gitkeep` |
-| Tests | none yet — see roadmap | — |
+| Package payload | `npm pack --dry-run` | only `bin/` and `template/` paths, plus npm's own three; under `template/memory-bank/`, only `_templates/` and `.gitkeep` |
+| Tests | `npm test` | 15 pass, roughly two seconds |
+
+`npm test` covers every row above it, so it is the one command to run before reporting work
+done. The rows remain because they are what to reach for when a test fails and you want to see
+the behaviour by hand.
+
+## Tests
+
+`node --test`, no framework, no dependencies — `node:test` plus `node:assert/strict`.
+
+```text
+test/install-paths.test.mjs    create, identical, conflict, parked, dry-run, personal opt-in
+test/guards.test.mjs           root refusal, flag conflict, misplaced bank, payload boundary
+test/package-payload.test.mjs  what npm pack would ship
+test-support/helpers.mjs       temp projects, installer invocation, path listing
+```
+
+Every test drives the real CLI as a child process against a temporary directory. Nothing runs
+in-process, so there is no way for a test to pass against an implementation that would fail a
+real install.
+
+**The helper lives outside `test/` deliberately.** Node's runner treats *every* file under a
+directory named `test` as a test file, so a helper module placed there is executed and reported
+as a passing suite with no assertions — inflating the count and confusing the output. There is
+no file-level exclude flag to fix it with; moving the file is the fix.
+
+**Tests that need a dirty payload copy it first.** `createPackageCopy()` clones `bin/` and
+`template/` into a temp directory so a test can, for example, plant a page under
+`template/memory-bank/` and prove the installer refuses to ship it. Mutating the real
+`template/` instead would race every other test that installs from it, because the runner runs
+test files in parallel.
+
+**The suite is mutation-checked.** Seven deliberate regressions were introduced into
+`bin/cli.mjs` one at a time — disabling the root guard, removing the memory-bank filter,
+removing parked-conflict detection, making conflicts overwrite the original, making personal
+modules non-optional, making `--dry-run` write, and removing misplaced-bank detection. Each
+one fails at least one test. Worth repeating after changing the installer: a test suite that
+passes against a broken implementation is worse than none, because it reports confidence it has
+not earned.
+
+Verified on Node 22.18 and Windows. `package.json` claims `>=18`; the suite uses nothing newer
+than `node:fs.cpSync` (16.7) and the stable `node:test` runner, but it has not been run on 18.
 
 ## Packaging gotchas
 

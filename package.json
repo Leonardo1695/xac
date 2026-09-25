@@ -23,6 +23,9 @@
   "bin": {
     "xac": "bin/cli.mjs"
   },
+  "scripts": {
+    "test": "node --test"
+  },
   "files": [
     "bin",
     "template"
