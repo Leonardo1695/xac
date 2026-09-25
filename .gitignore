@@ -7,5 +7,5 @@ Thumbs.db
 # Local install playground. Run the installer here, never at the repo root.
 /test-install/
 
-# Personal style module — its shippable copy lives in template/.cursor/rules/.
+# Personal style module, kept locally — its shippable copy is template/memory-bank/_xac/modules/caveman.md.
 /.cursor/rules/caveman.mdc

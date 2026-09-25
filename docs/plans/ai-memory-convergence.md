@@ -1,6 +1,6 @@
 # Plan — converging XAC with ai-memory's strengths
 
-Investigated and locked 2026-08-22; revised 2026-09-25. Status: **in progress** — phases 0 and 1
+Investigated and locked 2026-08-22; revised 2026-09-25. Status: **in progress** — phases 0, 1 and R
 are implemented; progress is tracked in [the roadmap](../roadmap.md).
 
 The decisions here are recorded as [ADR 8](../decisions/0008-lifecycle-is-conversational.md),
@@ -396,6 +396,12 @@ W8, not a separate phase.
 
 ### W8 — Relocation: `AGENTS.md` as the entry point ([ADR 12](../decisions/0012-agents-md-is-the-entry-point.md))
 
+*Done 2026-09-25.* The section came in at 12.8 kB and 217 lines. Two departures from the text
+below: the version went to 0.2.0 rather than 1.0.0, since semver puts pre-1.0 breaking changes in
+the minor digit; and the root `.cursor/rules/caveman.mdc` stays, because it is the maintainer's
+own gitignored style file rather than part of the factory. The installer also learned to treat
+CRLF-only differences as unchanged, found during end-to-end verification.
+
 - **W8.1 Payload move.** `template/` holds only `memory-bank/_xac/`. Skills move to
   `_xac/skills/`, `_templates/` to `_xac/templates/`, `caveman.mdc` to `_xac/modules/caveman.md`.
   The four always-on rules are merged, dieted and rewritten as `_xac/AGENTS.block.md` between
@@ -436,7 +442,7 @@ W8, not a separate phase.
 |---|---|---|
 | **0** ✓ | W6 `cli.mjs` tests | Existing debt, and the project's own "every change ships with its test" rule is currently violated. |
 | **1** ✓ | W3 bootstrap; W1.1 recall skill; W1.2 authority rule; W1.4 index lines; W5 capture exclusions; **W7 rule diet** | Pure markdown, no interdependencies. Bootstrap unblocks real dogfooding, which everything downstream needs. The rule diet ships with the rules it pays for. |
-| **R** | W8 relocation, including the W7 diet extended to the whole `AGENTS.md` section | Added 2026-09-25 by ADR 12. Goes before Phase 2 because Phase 2 edits `memory-session` and the rules, and both move. Dogfooding should exercise the layout that will ship, and `SETUP.md` is what a scratch project is set up with. |
+| **R** ✓ | W8 relocation, including the W7 diet extended to the whole `AGENTS.md` section | Added 2026-09-25 by ADR 12. Goes before Phase 2 because Phase 2 edits `memory-session` and the rules, and both move. Dogfooding should exercise the layout that will ship, and `SETUP.md` is what a scratch project is set up with. |
 | **2** | W2 conversational lifecycle, including W2.6 mode line and W2.5 documentation | Small, and it directly addresses the capture pain. Do it early enough to live with it during dogfooding. |
 | **3** | W4.4 handoff fields, W4.5 branch field | *Reduced by ADR 12.* The contract, skill trees, instruction files, `xac-adapt` and installer `.new` snippets are gone; W8 delivers the four-harness goal. |
 | **4** | W1.3 trigger row in the audit; W1.5 backlinks; W5 remainder | Small residue, and the entity-index trigger only earns its place once the audit is otherwise settled. |
